@@ -1,2 +1,2 @@
 # go-pkg
-Commong go packages
+Common go packages

@@ -6,7 +6,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Logger logrus.FieldLogger
+type (
+	Fields = logrus.Fields
+	Logger = logrus.FieldLogger
+)
 
 const (
 	DefaultLevel = logrus.InfoLevel
