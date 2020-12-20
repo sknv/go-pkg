@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Options is a set of parser options.
 type Options struct {
 	EnvPrefix      string
 	EnvKeyReplacer *strings.Replacer
@@ -31,7 +32,7 @@ func Parse(filePath string, config interface{}, options Options) error {
 	}
 
 	if err := viper.Unmarshal(config); err != nil {
-		return errors.Wrap(err, "unmarshal the config")
+		return errors.Wrap(err, "unmarshal config")
 	}
 	return nil
 }
