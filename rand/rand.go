@@ -1,0 +1,29 @@
+package rand
+
+import (
+	"math/rand"
+	"time"
+)
+
+const (
+	_letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	_digits  = "0123456789"
+	_charset = _digits + _letters
+)
+
+var (
+	_seededRand = rand.New(
+		rand.NewSource(
+			time.Now().UnixNano(),
+		),
+	)
+)
+
+// String generates a random string with a provided length.
+func String(length int) string {
+	buf, setLen := make([]byte, length), len(_charset)
+	for i := range buf {
+		buf[i] = _charset[_seededRand.Int()%setLen]
+	}
+	return string(buf)
+}
