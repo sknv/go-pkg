@@ -18,6 +18,7 @@ const (
 func Logger(logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
+			newCtx := log.ToContext(r.Context(), logger)
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor) // save a response status
 			scheme := "http"
 			if r.TLS != nil {
@@ -25,7 +26,7 @@ func Logger(logger log.Logger) func(http.Handler) http.Handler {
 			}
 
 			defer func(start time.Time) {
-				log.Extract(r.Context(), logger).WithFields(log.Fields{
+				log.Extract(newCtx).WithFields(log.Fields{
 					"uri":     fmt.Sprintf("%s %s://%s%s", r.Method, scheme, r.Host, r.RequestURI),
 					"status":  ww.Status(),
 					"ip":      r.RemoteAddr,
@@ -33,7 +34,7 @@ func Logger(logger log.Logger) func(http.Handler) http.Handler {
 				}).Info(_msgHandleRequest)
 			}(time.Now())
 
-			next.ServeHTTP(ww, r)
+			next.ServeHTTP(ww, r.WithContext(newCtx))
 		}
 		return http.HandlerFunc(fn)
 	}

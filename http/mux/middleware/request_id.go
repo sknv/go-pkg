@@ -15,6 +15,10 @@ const (
 	HeaderRequestID = "X-Request-Id"
 )
 
+const (
+	_fieldRequestID = "request_id"
+)
+
 // Global for the current process.
 var (
 	_prefix string
@@ -30,11 +34,10 @@ func RequestID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		requestID := r.Header.Get(HeaderRequestID)
 		if requestID == "" {
-			curReqID := _reqID.Add(1)
-			requestID = fmt.Sprintf("%s-%d", _prefix, curReqID)
+			requestID = newRequestID()
 		}
-		ctx := log.PutRequestID(r.Context(), requestID)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		log.AddFields(r.Context(), log.Fields{_fieldRequestID: requestID})
+		next.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(fn)
 }
@@ -45,4 +48,9 @@ func makePrefix() string {
 		hostname = "localhost"
 	}
 	return fmt.Sprintf("%s/%s", hostname, rand.String(8))
+}
+
+func newRequestID() string {
+	curReqID := _reqID.Add(1)
+	return fmt.Sprintf("%s-%d", _prefix, curReqID)
 }

@@ -1,6 +1,7 @@
 package log
 
 import (
+	"io/ioutil"
 	"log"
 
 	"github.com/sirupsen/logrus"
@@ -9,6 +10,15 @@ import (
 type (
 	Fields = logrus.Fields
 	Logger = logrus.FieldLogger
+)
+
+var (
+	NullLogger = &logrus.Logger{
+		Out:       ioutil.Discard,
+		Formatter: &logrus.TextFormatter{},
+		Hooks:     make(logrus.LevelHooks),
+		Level:     logrus.PanicLevel,
+	}
 )
 
 const (

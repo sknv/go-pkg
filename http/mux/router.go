@@ -15,11 +15,11 @@ type Option func(*chi.Mux)
 func NewRouter(logger log.Logger, options ...Option) *chi.Mux {
 	router := chi.NewRouter()
 
-	// Prepend default middleware
+	// Prepend default middleware, order matters
 	router.Use(
 		middleware.RealIP,
-		muxware.RequestID,
 		muxware.Logger(logger),
+		muxware.RequestID,
 	)
 
 	for _, opt := range options {

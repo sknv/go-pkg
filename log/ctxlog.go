@@ -4,35 +4,49 @@ import (
 	"context"
 )
 
-type ctxMarkerRequestID struct{}
+type ctxMarkerLogger struct{}
+
+type ctxLogger struct {
+	logger Logger
+	fields Fields
+}
 
 var (
-	_ctxKeyRequestID = ctxMarkerRequestID{}
+	_ctxKeyLogger = ctxMarkerLogger{}
 )
 
-// Extract returns the logger with a request id if exists.
-func Extract(ctx context.Context, logger Logger) Logger {
-	if ctx == nil { // return the default logger if a context is nil
-		return logger
+// AddFields adds logger fields to the context.
+func AddFields(ctx context.Context, fields Fields) {
+	log, ok := ctx.Value(_ctxKeyLogger).(*ctxLogger)
+	if !ok || log == nil {
+		return
 	}
 
-	requestID, _ := GetRequestID(ctx)
-	if requestID == "" {
-		return logger
+	for k, v := range fields {
+		log.fields[k] = v
 	}
-	return logger.WithField("requestID", requestID)
 }
 
-// GetRequestID retrieves request id from the context.
-func GetRequestID(ctx context.Context) (string, bool) {
-	requestID, ok := ctx.Value(_ctxKeyRequestID).(string)
-	return requestID, ok
+// Extract returns the logger with provided fields.
+func Extract(ctx context.Context) Logger {
+	log, ok := ctx.Value(_ctxKeyLogger).(*ctxLogger)
+	if !ok || log == nil {
+		return NullLogger
+	}
+
+	// Add log fields added until now
+	fields := make(Fields, len(log.fields))
+	for k, v := range log.fields {
+		fields[k] = v
+	}
+	return log.logger.WithFields(fields)
 }
 
-// PutRequestID puts request id into the context.
-func PutRequestID(ctx context.Context, requestID string) context.Context {
-	if requestID == "" {
-		return ctx
+// ToContext adds the logger to the context for extraction later, returning the new context that has been created.
+func ToContext(ctx context.Context, logger Logger) context.Context {
+	log := ctxLogger{
+		logger: logger,
+		fields: Fields{},
 	}
-	return context.WithValue(ctx, _ctxKeyRequestID, requestID)
+	return context.WithValue(ctx, _ctxKeyLogger, &log)
 }
