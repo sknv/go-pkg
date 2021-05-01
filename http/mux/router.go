@@ -2,24 +2,23 @@ package mux
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chi_middleware "github.com/go-chi/chi/v5/middleware"
 
-	muxware "github.com/sknv/go-pkg/http/mux/middleware"
-	"github.com/sknv/go-pkg/log"
+	"github.com/sknv/go-pkg/http/mux/middleware"
 )
 
 // Option configures *chi.Mux.
 type Option func(*chi.Mux)
 
 // NewRouter returns a new router.
-func NewRouter(logger log.Logger, options ...Option) *chi.Mux {
+func NewRouter(options ...Option) *chi.Mux {
 	router := chi.NewRouter()
 
 	// Prepend default middleware, order matters
 	router.Use(
-		middleware.RealIP,
-		muxware.Logger(logger),
-		muxware.RequestID,
+		chi_middleware.RealIP,
+		middleware.Logger,
+		middleware.RequestID,
 	)
 
 	for _, opt := range options {
@@ -27,7 +26,7 @@ func NewRouter(logger log.Logger, options ...Option) *chi.Mux {
 	}
 
 	// Append default middleware
-	router.Use(middleware.Recoverer)
+	router.Use(chi_middleware.Recoverer)
 
 	return router
 }

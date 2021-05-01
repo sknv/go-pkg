@@ -1,38 +1,37 @@
 package config
 
 import (
-	"strings"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
-// Options is a set of parser options.
-type Options struct {
-	EnvPrefix      string
-	EnvKeyReplacer *strings.Replacer
-}
+// Proxy
+var (
+	SetDefault        = viper.SetDefault
+	SetEnvKeyReplacer = viper.SetEnvKeyReplacer
+)
 
-// SetDefault sets the default value for this key.
-func SetDefault(key string, value interface{}) {
-	viper.SetDefault(key, value)
-}
+// Option configures viper.
+type Option func()
 
-// Parse will parse the configuration from the environment variables and a file with the specified path.
-func Parse(filePath string, config interface{}, options Options) error {
+// Parse the configuration from the environment variables and a file with the specified path.
+func Parse(filePath string, config interface{}, options ...Option) error {
+	// Apply options
+	for _, opt := range options {
+		opt()
+	}
+
 	// Parse environments variables
-	viper.SetEnvPrefix(options.EnvPrefix)
-	viper.SetEnvKeyReplacer(options.EnvKeyReplacer)
 	viper.AutomaticEnv()
 
 	// Parse the file
 	viper.SetConfigFile(filePath)
 	if err := viper.ReadInConfig(); err != nil {
-		return errors.Wrap(err, "read config")
+		return errors.Wrap(err, "viper.ReadInConfig")
 	}
 
 	if err := viper.Unmarshal(config); err != nil {
-		return errors.Wrap(err, "unmarshal config")
+		return errors.Wrap(err, "viper.Unmarshal")
 	}
 	return nil
 }

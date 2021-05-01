@@ -7,23 +7,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Proxy
 type (
-	Fields = logrus.Fields
-	Logger = logrus.FieldLogger
+	FieldLogger = logrus.FieldLogger
+	Logger      = logrus.Logger
+	Fields      = logrus.Fields
 )
 
-var (
-	NullLogger = &logrus.Logger{
-		Out:       ioutil.Discard,
-		Formatter: &logrus.TextFormatter{},
-		Hooks:     make(logrus.LevelHooks),
-		Level:     logrus.PanicLevel,
-	}
-)
-
-const (
-	DefaultLevel = logrus.InfoLevel
-)
+const DefaultLevel = logrus.InfoLevel
 
 func ParseLevel(level string) logrus.Level {
 	lvl, err := logrus.ParseLevel(level)
@@ -33,28 +24,30 @@ func ParseLevel(level string) logrus.Level {
 	return lvl
 }
 
+type Formatter string
+
 const (
-	JSONFormatter = "json"
-	TextFormatter = "text"
+	JSONFormatter Formatter = "json"
+	TextFormatter Formatter = "text"
 )
 
-var formatters = map[string]logrus.Formatter{
+var formatters = map[Formatter]logrus.Formatter{
 	JSONFormatter: &logrus.JSONFormatter{},
 	TextFormatter: &logrus.TextFormatter{},
 }
 
-func ParseFormatter(formatter string) logrus.Formatter {
+func ParseFormatter(formatter Formatter) logrus.Formatter {
 	if fmt, ok := formatters[formatter]; ok {
 		return fmt
 	}
 	return formatters[JSONFormatter] // default formatter
 }
 
-// Option configures *logrus.Logger.
-type Option func(*logrus.Logger)
+// Option configures *Logger.
+type Option func(*Logger)
 
-// Build a log instance.
-func Build(level, formatter string, options ...Option) Logger {
+// Build a logger instance.
+func Build(level string, formatter Formatter, options ...Option) *Logger {
 	logger := logrus.New()
 	logger.SetLevel(ParseLevel(level))
 	logger.SetFormatter(ParseFormatter(formatter))
@@ -65,4 +58,11 @@ func Build(level, formatter string, options ...Option) Logger {
 		opt(logger)
 	}
 	return logger
+}
+
+var nullLogger = &logrus.Logger{
+	Out:       ioutil.Discard,
+	Formatter: &logrus.TextFormatter{},
+	Hooks:     make(logrus.LevelHooks),
+	Level:     logrus.PanicLevel,
 }

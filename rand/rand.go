@@ -11,19 +11,17 @@ const (
 	_charset = _digits + _letters
 )
 
-var (
-	_seededRand = rand.New(
-		rand.NewSource(
-			time.Now().UnixNano(),
-		),
-	)
+var _seededRand = rand.New(
+	rand.NewSource(
+		time.Now().UnixNano(),
+	),
 )
 
 // String generates a random string with a provided length.
 func String(length int) string {
-	buf, setLen := make([]byte, length), len(_charset)
+	buf := make([]byte, length)
 	for i := range buf {
-		buf[i] = _charset[_seededRand.Int()%setLen]
+		buf[i] = _charset[_seededRand.Int()%len(_charset)]
 	}
 	return string(buf)
 }

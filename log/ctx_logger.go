@@ -1,19 +1,15 @@
 package log
 
-import (
-	"context"
-)
+import "context"
 
 type ctxMarkerLogger struct{}
 
 type ctxLogger struct {
-	logger Logger
+	logger FieldLogger
 	fields Fields
 }
 
-var (
-	_ctxKeyLogger = ctxMarkerLogger{}
-)
+var _ctxKeyLogger = ctxMarkerLogger{}
 
 // AddFields adds logger fields to the context.
 func AddFields(ctx context.Context, fields Fields) {
@@ -28,10 +24,10 @@ func AddFields(ctx context.Context, fields Fields) {
 }
 
 // Extract returns the logger with provided fields.
-func Extract(ctx context.Context) Logger {
+func Extract(ctx context.Context) FieldLogger {
 	log, ok := ctx.Value(_ctxKeyLogger).(*ctxLogger)
 	if !ok || log == nil {
-		return NullLogger
+		return nullLogger
 	}
 
 	// Add log fields added until now
@@ -43,10 +39,10 @@ func Extract(ctx context.Context) Logger {
 }
 
 // ToContext adds the logger to the context for extraction later, returning the new context that has been created.
-func ToContext(ctx context.Context, logger Logger) context.Context {
+func ToContext(ctx context.Context, logger FieldLogger) context.Context {
 	log := ctxLogger{
 		logger: logger,
-		fields: Fields{},
+		fields: make(Fields),
 	}
 	return context.WithValue(ctx, _ctxKeyLogger, &log)
 }
