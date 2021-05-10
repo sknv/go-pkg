@@ -43,12 +43,12 @@ func Connect(config Config, options ...Option) (*sql.DB, error) {
 		db.SetMaxOpenConns(config.MaxOpenConn)
 	}
 
-	if config.MaxConnLifetime != 0 {
-		db.SetConnMaxLifetime(config.MaxConnLifetime)
-	}
-
 	if config.MaxIdleConn != 0 {
 		db.SetMaxIdleConns(config.MaxIdleConn)
+	}
+
+	if config.MaxConnLifetime != 0 {
+		db.SetConnMaxLifetime(config.MaxConnLifetime)
 	}
 
 	return db, nil

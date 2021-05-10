@@ -15,13 +15,9 @@ const HeaderRequestID = "X-Request-ID"
 
 // Global for the current process.
 var (
-	_prefix string
+	_prefix = makePrefix()
 	_reqID  atomic.Uint64
 )
-
-func init() {
-	_prefix = makePrefix()
-}
 
 const _fieldRequestID = "request_id"
 
