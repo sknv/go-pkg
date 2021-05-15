@@ -21,7 +21,7 @@ func Start(server *http.Server, listener net.Listener) {
 // Stop stops a web server.
 func Stop(ctx context.Context, server *http.Server) error {
 	if err := server.Shutdown(ctx); err != nil {
-		return errors.Wrap(err, "server.Shutdown")
+		return errors.Wrap(err, "shutdown server")
 	}
 	return nil
 }

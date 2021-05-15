@@ -27,11 +27,11 @@ func Parse(filePath string, config interface{}, options ...Option) error {
 	// Parse the file
 	viper.SetConfigFile(filePath)
 	if err := viper.ReadInConfig(); err != nil {
-		return errors.Wrap(err, "viper.ReadInConfig")
+		return errors.Wrap(err, "read in config")
 	}
 
 	if err := viper.Unmarshal(config); err != nil {
-		return errors.Wrap(err, "viper.Unmarshal")
+		return errors.Wrap(err, "unmarshal config")
 	}
 	return nil
 }

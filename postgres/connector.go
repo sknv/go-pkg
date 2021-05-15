@@ -24,7 +24,7 @@ type Option func(*pgx.ConnConfig)
 func Connect(config Config, options ...Option) (*sql.DB, error) {
 	connConfig, err := pgx.ParseConfig(config.URI)
 	if err != nil {
-		return nil, errors.Wrap(err, "pgx.ParseConfig")
+		return nil, errors.Wrap(err, "parse config")
 	}
 
 	// Apply options
@@ -35,7 +35,7 @@ func Connect(config Config, options ...Option) (*sql.DB, error) {
 	connStr := stdlib.RegisterConnConfig(connConfig)
 	db, err := sql.Open(DriverName, connStr)
 	if err != nil {
-		return nil, errors.Wrap(err, "sql.Open")
+		return nil, errors.Wrap(err, "open db")
 	}
 
 	// Apply config
