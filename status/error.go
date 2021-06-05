@@ -1,16 +1,20 @@
 package status
 
-import "fmt"
+import (
+	"fmt"
+)
+
+type ErrorCode int
 
 // Error holds an error code, message and error itself.
 type Error struct {
-	Code     int    `json:"code"`
-	Message  string `json:"message"`
-	Internal error  `json:"-"`
+	Code     ErrorCode `json:"code,omitempty"`
+	Message  string    `json:"message,omitempty"`
+	Internal error     `json:"-"`
 }
 
 // NewError returns a status error.
-func NewError(code int, message string) *Error {
+func NewError(code ErrorCode, message string) *Error {
 	return &Error{
 		Code:    code,
 		Message: message,
