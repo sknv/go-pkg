@@ -20,7 +20,8 @@ type webResponse struct {
 }
 
 // RenderData renders JSON data response.
-func RenderData(w http.ResponseWriter, r *http.Request, data interface{}) {
+func RenderData(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
+	render.Status(r, code)
 	render.JSON(w, r, webResponse{Data: data})
 }
 
@@ -29,7 +30,7 @@ func RenderError(w http.ResponseWriter, r *http.Request, err error) {
 	// Prepare the error to render
 	webErr := webError{Msg: err.Error()}
 
-	var cause status.Error
+	var cause *status.Error
 	if errors.As(err, &cause) {
 		webErr.Code = cause.Code
 		webErr.Msg = cause.Message

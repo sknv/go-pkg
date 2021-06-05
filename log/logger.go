@@ -43,14 +43,26 @@ func ParseFormatter(formatter Formatter) logrus.Formatter {
 	return formatters[JSONFormatter] // default formatter
 }
 
+var NullLogger = &logrus.Logger{
+	Out:       ioutil.Discard,
+	Formatter: &logrus.TextFormatter{},
+	Hooks:     make(logrus.LevelHooks),
+	Level:     logrus.PanicLevel,
+}
+
+type Config struct {
+	Formatter Formatter `mapstructure:"formatter"`
+	Level     string    `mapstructure:"level"`
+}
+
 // Option configures *Logger.
 type Option func(*Logger)
 
 // Build a logger instance.
-func Build(level string, formatter Formatter, options ...Option) *Logger {
+func Build(config Config, options ...Option) *Logger {
 	logger := logrus.New()
-	logger.SetLevel(ParseLevel(level))
-	logger.SetFormatter(ParseFormatter(formatter))
+	logger.SetLevel(ParseLevel(config.Level))
+	logger.SetFormatter(ParseFormatter(config.Formatter))
 	log.SetOutput(logger.Writer()) // redirect std log output
 
 	// Apply options
@@ -58,11 +70,4 @@ func Build(level string, formatter Formatter, options ...Option) *Logger {
 		opt(logger)
 	}
 	return logger
-}
-
-var nullLogger = &logrus.Logger{
-	Out:       ioutil.Discard,
-	Formatter: &logrus.TextFormatter{},
-	Hooks:     make(logrus.LevelHooks),
-	Level:     logrus.PanicLevel,
 }

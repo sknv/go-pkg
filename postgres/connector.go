@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 )
 
 const DriverName = "pgx"
@@ -16,6 +17,18 @@ type Config struct {
 	MaxOpenConn     int           `mapstructure:"max_open_conn"`
 	MaxIdleConn     int           `mapstructure:"max_idle_conn"`
 	MaxConnLifetime time.Duration `mapstructure:"max_conn_lifetime"`
+	MigrationPath   string        `mapstructure:"migration_path"`
+}
+
+func (c *Config) Valid() error {
+	var err error
+	if c.URI == "" {
+		err = multierr.Append(err, errors.New("empty uri"))
+	}
+	if c.MigrationPath == "" {
+		err = multierr.Append(err, errors.New("empty migration path"))
+	}
+	return err
 }
 
 // Option configures *pgx.ConnConfig.

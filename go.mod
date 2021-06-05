@@ -11,4 +11,5 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.7.1
 	go.uber.org/atomic v1.7.0
+	go.uber.org/multierr v1.7.0
 )

@@ -2,7 +2,7 @@ package mux
 
 import (
 	"github.com/go-chi/chi/v5"
-	chi_middleware "github.com/go-chi/chi/v5/middleware"
+	chimidware "github.com/go-chi/chi/v5/middleware"
 
 	"github.com/sknv/go-pkg/http/mux/middleware"
 )
@@ -16,7 +16,7 @@ func NewRouter(options ...Option) *chi.Mux {
 
 	// Prepend default middleware, order matters
 	router.Use(
-		chi_middleware.RealIP,
+		chimidware.RealIP,
 		middleware.Logger,
 		middleware.RequestID,
 	)
@@ -26,7 +26,7 @@ func NewRouter(options ...Option) *chi.Mux {
 	}
 
 	// Append default middleware
-	router.Use(chi_middleware.Recoverer)
+	router.Use(chimidware.Recoverer)
 
 	return router
 }

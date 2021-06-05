@@ -27,7 +27,7 @@ func AddFields(ctx context.Context, fields Fields) {
 func Extract(ctx context.Context) FieldLogger {
 	log, ok := ctx.Value(_ctxKeyLogger).(*ctxLogger)
 	if !ok || log == nil {
-		return nullLogger
+		return NullLogger
 	}
 
 	// Add log fields added until now
