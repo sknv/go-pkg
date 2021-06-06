@@ -6,19 +6,29 @@ import (
 	httputil "github.com/sknv/go-pkg/http"
 )
 
-type WebError interface {
+type DescriptiveError interface {
 	GetCode() ErrorCode
 	GetMessage() string
 }
 
+type jsonError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
 // RenderError renders JSON error response.
 func RenderError(w http.ResponseWriter, r *http.Request, err error) {
-	webErr, ok := err.(WebError)
+	descErr, ok := err.(DescriptiveError)
 	if !ok {
-		webErr = NewError(Internal, err.Error())
+		descErr = NewError(Internal, err.Error())
 	}
 
-	httputil.RenderJSON(w, r, HTTPStatusFromErrorCode(webErr.GetCode()), webErr)
+	status := HTTPStatusFromErrorCode(descErr.GetCode())
+	jsErr := jsonError{
+		Code:    string(descErr.GetCode()),
+		Message: descErr.GetMessage(),
+	}
+	httputil.RenderJSON(w, r, status, jsErr)
 }
 
 // HTTPStatusFromErrorCode maps ErrorCode to HTTP status.

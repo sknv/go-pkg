@@ -12,9 +12,9 @@ const (
 
 // Error holds an error code, message and error itself.
 type Error struct {
-	Code     ErrorCode `json:"code,omitempty"`
-	Message  string    `json:"message,omitempty"`
-	Internal error     `json:"-"`
+	Code     ErrorCode
+	Message  string
+	Internal error
 }
 
 // NewError returns a status error.
