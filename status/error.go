@@ -1,10 +1,14 @@
 package status
 
-import (
-	"fmt"
-)
+import "fmt"
 
-type ErrorCode int
+type ErrorCode string
+
+const (
+	Internal        ErrorCode = "internal"
+	InvalidArgument ErrorCode = "invalid_argument"
+	NotFound        ErrorCode = "not_found"
+)
 
 // Error holds an error code, message and error itself.
 type Error struct {
@@ -27,6 +31,17 @@ func (e *Error) SetInternal(err error) *Error {
 	return e
 }
 
+// Error implements error.
 func (e *Error) Error() string {
-	return fmt.Sprintf("code = %d, msg = %s, err = %s", e.Code, e.Message, e.Internal)
+	return fmt.Sprintf("code = %s, message = %s, internal = %s", e.Code, e.Message, e.Internal)
+}
+
+// GetCode returns error code.
+func (e *Error) GetCode() ErrorCode {
+	return e.Code
+}
+
+// GetMessage returns error description.
+func (e *Error) GetMessage() string {
+	return e.Message
 }
