@@ -6,3 +6,7 @@ Common go packages
 
 - Logrus
 - Linters (make sure you have installed `golangci-lint` [linter](https://golangci-lint.run/usage/install/#local-installation))
+- Kafka
+- Postgres and migrations
+- Redis
+- Tracing
