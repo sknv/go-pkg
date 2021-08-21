@@ -27,7 +27,7 @@ func (Logger) AfterProcessPipeline(context.Context, []redis.Cmder) error {
 	return nil
 }
 
-// RegisterLogger register redis a logger hook.
+// RegisterLogger registers a redis logger hook.
 func RegisterLogger(rdb *redis.Client) {
 	rdb.AddHook(Logger{})
 }

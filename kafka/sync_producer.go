@@ -6,6 +6,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama"
+	"go.opentelemetry.io/otel"
 
 	"github.com/sknv/go-pkg/closer"
 )
@@ -14,7 +15,8 @@ import (
 type SyncProducer struct {
 	sarama.SyncProducer
 
-	client sarama.Client
+	enableTracing bool
+	client        sarama.Client
 }
 
 // NewSyncProducer creates a new SyncProducer using the given broker addresses and configuration.
@@ -37,14 +39,20 @@ func NewSyncProducer(brokers []string, config Config) (*SyncProducer, error) {
 	return &SyncProducer{
 		SyncProducer: prod,
 
-		client: client,
+		enableTracing: true,
+		client:        client,
 	}, nil
 }
 
 // Publish publishes a message to the provided topic.
 func (p *SyncProducer) Publish(
-	_ context.Context, message *sarama.ProducerMessage,
+	ctx context.Context, message *sarama.ProducerMessage,
 ) (partition int32, offset int64, err error) {
+	// Inject tracing info into message if needed
+	if p.enableTracing {
+		otel.GetTextMapPropagator().Inject(ctx, otelsarama.NewProducerMessageCarrier(message))
+	}
+
 	return p.SendMessage(message)
 }
 

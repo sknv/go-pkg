@@ -5,6 +5,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+// RegisterTracing registers a redis tracing hook.
 func RegisterTracing(rdb *redis.Client) {
 	rdb.AddHook(redisotel.NewTracingHook())
 }
