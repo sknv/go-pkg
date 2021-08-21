@@ -11,6 +11,7 @@ const (
 	_charset = _digits + _letters
 )
 
+//nolint:gosec // no need in secure random
 var _seededRand = rand.New(
 	rand.NewSource(
 		time.Now().UnixNano(),
