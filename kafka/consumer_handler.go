@@ -5,6 +5,8 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/korovkin/limiter"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama"
+	"go.opentelemetry.io/otel"
 
 	"github.com/sknv/go-pkg/log"
 )
@@ -44,8 +46,6 @@ func (c *consumerHandler) Cleanup(sarama.ConsumerGroupSession) error {
 // ConsumeClaim must start a consumer loop of ConsumerGroupClaim's Messages().
 // Once the Messages() channel is closed, the Handler must finish its processing loop and exit.
 func (c *consumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	ctx := session.Context()
-
 	limit := limiter.NewConcurrencyLimiter(c.handler.Limit())
 	defer limit.Wait()
 
@@ -54,14 +54,21 @@ func (c *consumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 	// https://github.com/Shopify/sarama/blob/master/consumer_group.go#L27-L29
 	for message := range claim.Messages() {
 		limit.Execute(func() {
-			if err := c.handler.Consume(ctx, message); err != nil {
-				log.Extract(ctx).WithError(err).Error("handle kafka message")
-				return
-			}
-			session.MarkMessage(message, "")
+			c.handleMessage(session, message)
 		})
 	}
 	return nil
+}
+
+func (c *consumerHandler) handleMessage(session sarama.ConsumerGroupSession, message *sarama.ConsumerMessage) {
+	// Extract tracing info from message
+	ctx := otel.GetTextMapPropagator().Extract(session.Context(), otelsarama.NewConsumerMessageCarrier(message))
+
+	if err := c.handler.Consume(ctx, message); err != nil {
+		log.Extract(ctx).WithError(err).Error("handle kafka message")
+		return
+	}
+	session.MarkMessage(message, "") // mark a message as consumed
 }
 
 func (c *consumerHandler) reset() {

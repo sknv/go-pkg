@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Shopify/sarama"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama"
 
 	"github.com/sknv/go-pkg/closer"
 )
@@ -17,8 +18,8 @@ type SyncProducer struct {
 }
 
 // NewSyncProducer creates a new SyncProducer using the given broker addresses and configuration.
-func NewSyncProducer(brokers []string, config *sarama.Config) (*SyncProducer, error) {
-	client, err := sarama.NewClient(brokers, config)
+func NewSyncProducer(brokers []string, config Config) (*SyncProducer, error) {
+	client, err := sarama.NewClient(brokers, config.Sarama)
 	if err != nil {
 		return nil, fmt.Errorf("create sarama client: %w", err)
 	}
@@ -26,6 +27,11 @@ func NewSyncProducer(brokers []string, config *sarama.Config) (*SyncProducer, er
 	prod, err := sarama.NewSyncProducerFromClient(client)
 	if err != nil {
 		return nil, fmt.Errorf("create sarama sync producer from client: %w", err)
+	}
+
+	// Register tracing if needed
+	if config.EnableTracing {
+		prod = otelsarama.WrapSyncProducer(config.Sarama, prod)
 	}
 
 	return &SyncProducer{

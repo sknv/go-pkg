@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Shopify/sarama"
-
 	"github.com/sknv/go-pkg/closer"
 	"github.com/sknv/go-pkg/log"
 )
@@ -25,9 +23,7 @@ func NewConsumerManager() *ConsumerManager {
 }
 
 // RegisterConsumerGroup registers new consumer group and returns it.
-func (c *ConsumerManager) RegisterConsumerGroup(
-	brokers []string, group string, config *sarama.Config,
-) (*ConsumerGroup, error) {
+func (c *ConsumerManager) RegisterConsumerGroup(brokers []string, group string, config Config) (*ConsumerGroup, error) {
 	cons, err := NewConsumerGroup(brokers, group, config)
 	if err != nil {
 		return nil, err

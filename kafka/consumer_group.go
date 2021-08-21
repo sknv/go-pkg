@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/Shopify/sarama"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama"
 
 	"github.com/sknv/go-pkg/log"
 )
@@ -13,16 +14,22 @@ import (
 type ConsumerGroup struct {
 	sarama.ConsumerGroup
 
-	cancel context.CancelFunc
+	enableTracing bool
+	cancel        context.CancelFunc
 }
 
 // NewConsumerGroup returns a new instance.
-func NewConsumerGroup(brokers []string, group string, config *sarama.Config) (*ConsumerGroup, error) {
-	cons, err := sarama.NewConsumerGroup(brokers, group, config)
+func NewConsumerGroup(brokers []string, group string, config Config) (*ConsumerGroup, error) {
+	cons, err := sarama.NewConsumerGroup(brokers, group, config.Sarama)
 	if err != nil {
 		return nil, err
 	}
-	return &ConsumerGroup{ConsumerGroup: cons}, nil
+
+	return &ConsumerGroup{
+		ConsumerGroup: cons,
+
+		enableTracing: config.EnableTracing,
+	}, nil
 }
 
 // Consume starts consuming from the provided topics.
@@ -32,6 +39,12 @@ func (c *ConsumerGroup) Consume(ctx context.Context, topics []string, handler Co
 	ctx, c.cancel = context.WithCancel(ctx)
 	cons := newConsumerHandler(handler)
 
+	// Register tracing if needed
+	var consumerHandler sarama.ConsumerGroupHandler = cons
+	if c.enableTracing {
+		consumerHandler = otelsarama.WrapConsumerGroupHandler(consumerHandler)
+	}
+
 	go func() {
 		defer wg.Done()
 
@@ -40,7 +53,7 @@ func (c *ConsumerGroup) Consume(ctx context.Context, topics []string, handler Co
 		// `Consume` should be called inside an infinite loop, when a server-side rebalance happens,
 		// the consumer session will need to be recreated to get the new claims
 		for {
-			if err := c.ConsumerGroup.Consume(ctx, topics, cons); err != nil {
+			if err := c.ConsumerGroup.Consume(ctx, topics, consumerHandler); err != nil {
 				logger.WithError(err).Error("consume from topics")
 			}
 
