@@ -2,42 +2,42 @@ package postgres
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 )
 
-const DriverName = "pgx"
+const (
+	DriverName = "pgx"
+)
 
+// Config is a connection config.
 type Config struct {
-	URI             string        `mapstructure:"uri"`
-	MaxOpenConn     int           `mapstructure:"max_open_conn"`
-	MaxIdleConn     int           `mapstructure:"max_idle_conn"`
-	MaxConnLifetime time.Duration `mapstructure:"max_conn_lifetime"`
-	MigrationPath   string        `mapstructure:"migration_path"`
-}
-
-func (c *Config) Valid() error {
-	var err error
-	if c.URI == "" {
-		err = multierr.Append(err, errors.New("empty uri"))
-	}
-	if c.MigrationPath == "" {
-		err = multierr.Append(err, errors.New("empty migration path"))
-	}
-	return err
+	URL             string
+	MaxOpenConn     int           // maximum number of open connections
+	MaxConnLifetime time.Duration // maximum amount of time a connection may be reused
+	EnableTracing   bool
 }
 
 // Option configures *pgx.ConnConfig.
 type Option func(*pgx.ConnConfig)
 
+// Connect opens a db connection.
 func Connect(config Config, options ...Option) (*sql.DB, error) {
-	connConfig, err := pgx.ParseConfig(config.URI)
+	connConfig, err := pgx.ParseConfig(config.URL)
 	if err != nil {
-		return nil, errors.Wrap(err, "parse config")
+		return nil, fmt.Errorf("parse config: %w", err)
+	}
+
+	// Register tracing if needed
+	driverName := DriverName
+	if config.EnableTracing {
+		driverName, err = RegisterTracer(driverName)
+		if err != nil {
+			return nil, fmt.Errorf("register tracer: %w", err)
+		}
 	}
 
 	// Apply options
@@ -46,18 +46,15 @@ func Connect(config Config, options ...Option) (*sql.DB, error) {
 	}
 
 	connStr := stdlib.RegisterConnConfig(connConfig)
-	db, err := sql.Open(DriverName, connStr)
+	db, err := sql.Open(driverName, connStr)
 	if err != nil {
-		return nil, errors.Wrap(err, "open db")
+		return nil, fmt.Errorf("open db: %w", err)
 	}
 
 	// Apply config
 	if config.MaxOpenConn != 0 {
 		db.SetMaxOpenConns(config.MaxOpenConn)
-	}
-
-	if config.MaxIdleConn != 0 {
-		db.SetMaxIdleConns(config.MaxIdleConn)
+		db.SetMaxIdleConns(config.MaxOpenConn)
 	}
 
 	if config.MaxConnLifetime != 0 {

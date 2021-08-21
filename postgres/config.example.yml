@@ -1,6 +1,0 @@
-postgres:
-  uri: user=example password=secret host=localhost port=5432 dbname=example sslmode=disable
-  max_open_conn: 10
-  max_idle_conn: 10
-  max_conn_lifetime: 30m
-  migration_path: ./migrations
