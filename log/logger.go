@@ -1,21 +1,30 @@
 package log
 
 import (
-	"io/ioutil"
-	"log"
+	"os"
 
 	"github.com/sirupsen/logrus"
 )
 
-// Proxy
-type (
-	FieldLogger = logrus.FieldLogger
-	Logger      = logrus.Logger
-	Fields      = logrus.Fields
+const (
+	DefaultLevel = logrus.InfoLevel
 )
 
-const DefaultLevel = logrus.InfoLevel
+// Config is a logger config.
+type Config struct {
+	Level string
+}
 
+// Option configures *logrus.Logger.
+type Option func(*logrus.Logger)
+
+// Init the global logger instance from the provided config once.
+func Init(cfg Config) {
+	lvl := ParseLevel(cfg.Level)
+	Build(lvl)
+}
+
+// ParseLevel parses the provided string level and returns a corresponding known level or DefaultLevel.
 func ParseLevel(level string) logrus.Level {
 	lvl, err := logrus.ParseLevel(level)
 	if err != nil {
@@ -24,50 +33,14 @@ func ParseLevel(level string) logrus.Level {
 	return lvl
 }
 
-type Formatter string
-
-const (
-	JSONFormatter Formatter = "json"
-	TextFormatter Formatter = "text"
-)
-
-var formatters = map[Formatter]logrus.Formatter{
-	JSONFormatter: &logrus.JSONFormatter{},
-	TextFormatter: &logrus.TextFormatter{},
-}
-
-func ParseFormatter(formatter Formatter) logrus.Formatter {
-	if fmt, ok := formatters[formatter]; ok {
-		return fmt
-	}
-	return formatters[JSONFormatter] // default formatter
-}
-
-var NullLogger = &logrus.Logger{
-	Out:       ioutil.Discard,
-	Formatter: &logrus.TextFormatter{},
-	Hooks:     make(logrus.LevelHooks),
-	Level:     logrus.PanicLevel,
-}
-
-type Config struct {
-	Formatter Formatter `mapstructure:"formatter"`
-	Level     string    `mapstructure:"level"`
-}
-
-// Option configures *Logger.
-type Option func(*Logger)
-
-// Build a logger instance.
-func Build(config Config, options ...Option) *Logger {
-	logger := logrus.New()
-	logger.SetLevel(ParseLevel(config.Level))
-	logger.SetFormatter(ParseFormatter(config.Formatter))
-	log.SetOutput(logger.Writer()) // redirect std log output
+// Build the default logger with the provided log level.
+func Build(level logrus.Level, options ...Option) {
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(level)
+	logrus.SetFormatter(&logrus.JSONFormatter{})
 
 	// Apply options
 	for _, opt := range options {
-		opt(logger)
+		opt(logrus.StandardLogger())
 	}
-	return logger
 }
