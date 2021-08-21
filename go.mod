@@ -7,6 +7,7 @@ require (
 	github.com/brianvoe/gofakeit/v6 v6.7.0
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-chi/render v1.0.1
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/jackc/pgx/v4 v4.11.0
 	github.com/pkg/errors v0.9.1
 	github.com/pressly/goose v2.7.0+incompatible
