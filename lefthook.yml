@@ -5,4 +5,6 @@ pre-commit:
   parallel: true
   commands:
     lint:
-      run: golangci-lint run
+      run: make lint
+    test:
+      run: make test
