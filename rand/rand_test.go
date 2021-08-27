@@ -1,17 +1,15 @@
 package rand
 
 import (
+	"math/rand"
 	"testing"
 
-	"github.com/brianvoe/gofakeit/v6"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestString(t *testing.T) {
-	gofakeit.Seed(0)
-
 	t.Run("generates a string with proper length", func(t *testing.T) {
-		length := int(gofakeit.Int8())
+		length := rand.Intn(16) //nolint:gosec // no need in secure random
 		str := String(length)
 		assert.Equal(t, length, len(str))
 	})

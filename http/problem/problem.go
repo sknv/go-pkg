@@ -4,6 +4,10 @@ import (
 	"fmt"
 )
 
+const (
+	_defaultType = "about:blank"
+)
+
 // Problem is the struct definition of a problem details object (see RFC-7807).
 type Problem struct {
 	// Type contains a URI that identifies the problem type. This URI will,
@@ -36,10 +40,6 @@ func New(status int, title string) *Problem {
 		Title:  title,
 	}
 }
-
-const (
-	_defaultType = "about:blank"
-)
 
 func (p *Problem) GetType() string {
 	if p.Type == "" {

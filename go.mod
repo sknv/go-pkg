@@ -5,7 +5,6 @@ go 1.16
 require (
 	github.com/Shopify/sarama v1.29.1
 	github.com/XSAM/otelsql v0.5.0
-	github.com/brianvoe/gofakeit/v6 v6.7.0
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/go-redis/redis/extra/redisotel/v8 v8.11.3
 	github.com/go-redis/redis/v8 v8.11.3
