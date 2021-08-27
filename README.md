@@ -11,4 +11,4 @@ Common go packages
 - Redis
 - Tracing
 - Linters (make sure you have installed [golangci-lint](https://golangci-lint.run/usage/install/#local-installation))
-- Pre-commit hooks (make sure you have installed [lefthook](https://github.com/evilmartians/lefthook/blob/master/docs/other.md#installation) followed by `lefthook add pre-commit`)
+- Pre-commit hooks (make sure you have installed [lefthook](https://github.com/evilmartians/lefthook/blob/master/docs/other.md#installation) followed by `make add-pre-commit`)
