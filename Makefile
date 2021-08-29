@@ -20,3 +20,7 @@ lint:
 .PHONY: test
 test:
 	go test -cover -v ./...
+
+.PHONY: update-deps
+update-deps:
+	go get -t -u ./...
