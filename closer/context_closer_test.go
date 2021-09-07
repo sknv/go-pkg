@@ -45,7 +45,7 @@ func TestCloseContext(t *testing.T) {
 			t.Parallel()
 
 			err := CloseContext(tc.ctx, tc.closer)
-			assert.Equal(t, tc.wantErr, err != nil, "errors do not match")
+			assert.Equal(t, tc.wantErr, err != nil, "errors do not match, err=%s", err)
 		})
 	}
 }

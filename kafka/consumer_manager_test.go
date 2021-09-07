@@ -32,7 +32,7 @@ func TestConsumerManagerClose(t *testing.T) {
 
 			man := NewConsumerManager()
 			err := man.Close(tc.ctx)
-			assert.Equal(t, tc.wantErr, err != nil, "errors do not match")
+			assert.Equal(t, tc.wantErr, err != nil, "errors do not match, err=%s", err)
 		})
 	}
 }

@@ -6,13 +6,9 @@ import (
 	"testing"
 
 	"github.com/Shopify/sarama"
-	"github.com/golang/mock/gomock"
+	"github.com/Shopify/sarama/mocks"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/sknv/go-pkg/kafka/mock"
 )
-
-//go:generate mockgen -destination=mock/sarama_sync_producer.go -package=mock github.com/Shopify/sarama SyncProducer
 
 func TestSyncProducerPublish(t *testing.T) {
 	type (
@@ -45,21 +41,21 @@ func TestSyncProducerPublish(t *testing.T) {
 		},
 	}
 
-	ctrl := gomock.NewController(t)
-
 	for name, tc := range tests {
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			prod := mock.NewMockSyncProducer(ctrl)
-			prod.EXPECT().SendMessage(gomock.Any()).
-				Return(int32(0), int64(0), tc.input.producer.err)
-
+			prod := mocks.NewSyncProducer(t, nil)
+			if tc.input.producer.err == nil {
+				prod.ExpectSendMessageAndSucceed()
+			} else {
+				prod.ExpectSendMessageAndFail(tc.input.producer.err)
+			}
 			syncProd := SyncProducer{SyncProducer: prod}
 
 			_, _, err := syncProd.Publish(context.Background(), &sarama.ProducerMessage{})
-			assert.Equal(t, tc.wantErr, err != nil, "errors do not match")
+			assert.Equal(t, tc.wantErr, err != nil, "errors do not match, err=%s", err)
 		})
 	}
 }
@@ -89,19 +85,16 @@ func TestSyncProducerClose(t *testing.T) {
 		},
 	}
 
-	ctrl := gomock.NewController(t)
-
 	for name, tc := range tests {
 		tc := tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			prod := mock.NewMockSyncProducer(ctrl)
-			prod.EXPECT().Close().Return(nil).AnyTimes()
+			prod := mocks.NewSyncProducer(t, nil)
 			syncProd := SyncProducer{SyncProducer: prod}
 
 			err := syncProd.Close(tc.ctx)
-			assert.Equal(t, tc.wantErr, err != nil, "errors do not match")
+			assert.Equal(t, tc.wantErr, err != nil, "errors do not match, err=%s", err)
 		})
 	}
 }
