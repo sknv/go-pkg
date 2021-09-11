@@ -35,30 +35,45 @@ func TestParseLevel(t *testing.T) {
 }
 
 func TestBuild(t *testing.T) {
-	var optApplied bool
+	type input struct {
+		level logrus.Level
+		opts  []func(*bool) Option
+	}
+
 	tests := map[string]struct {
-		level          logrus.Level
-		opts           []Option
+		input          input
+		optApplied     bool
 		wantOptApplied bool
 	}{
 		"builds logger successfully": {
-			level:          logrus.DebugLevel,
+			input:          input{level: logrus.DebugLevel},
 			wantOptApplied: false,
 		},
 		"applies options successfully": {
-			level:          logrus.DebugLevel,
-			opts:           []Option{func(*logrus.Logger) { optApplied = true }},
+			input: input{
+				level: logrus.DebugLevel,
+				opts: []func(*bool) Option{
+					func(opt *bool) Option {
+						return func(*logrus.Logger) { *opt = true }
+					},
+				},
+			},
 			wantOptApplied: true,
 		},
 	}
 
 	for name, tc := range tests {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
-			optApplied = false // restore every time
+			t.Parallel()
 
-			Build(tc.level, tc.opts...)
+			opts := make([]Option, 0, len(tc.input.opts))
+			for _, opt := range tc.input.opts {
+				opts = append(opts, opt(&tc.optApplied))
+			}
+			Build(tc.input.level, opts...)
 			assert.NotEqual(t, logrus.StandardLogger(), _nullLogger)
-			assert.Equal(t, tc.wantOptApplied, optApplied)
+			assert.Equal(t, tc.wantOptApplied, tc.optApplied)
 		})
 	}
 }

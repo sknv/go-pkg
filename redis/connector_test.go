@@ -12,7 +12,7 @@ func TestConnect(t *testing.T) {
 	type (
 		input struct {
 			cfg  Config
-			opts []Option
+			opts []func(*bool) Option
 		}
 
 		result struct {
@@ -23,10 +23,10 @@ func TestConnect(t *testing.T) {
 		}
 	)
 
-	var optApplied bool
 	tests := map[string]struct {
-		input input
-		want  result
+		input      input
+		optApplied bool
+		want       result
 	}{
 		"does not connect to redis with invalid url": {
 			input: input{
@@ -47,7 +47,11 @@ func TestConnect(t *testing.T) {
 					MaxOpenConn:     10,
 					MaxConnLifetime: time.Second * 10,
 				},
-				opts: []Option{func(*redis.Options) { optApplied = true }},
+				opts: []func(*bool) Option{
+					func(opt *bool) Option {
+						return func(*redis.Options) { *opt = true }
+					},
+				},
 			},
 			want: result{
 				optApplied:      true,
@@ -59,11 +63,16 @@ func TestConnect(t *testing.T) {
 	}
 
 	for name, tc := range tests {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
-			optApplied = false // restore every time
+			t.Parallel()
 
-			rdb, err := Connect(tc.input.cfg, tc.input.opts...)
-			assert.Equal(t, tc.want.optApplied, optApplied)
+			opts := make([]Option, 0, len(tc.input.opts))
+			for _, opt := range tc.input.opts {
+				opts = append(opts, opt(&tc.optApplied))
+			}
+			rdb, err := Connect(tc.input.cfg, opts...)
+			assert.Equal(t, tc.want.optApplied, tc.optApplied)
 			assert.Equal(t, tc.want.wantErr, err != nil, "errors do no match")
 
 			if rdb != nil {

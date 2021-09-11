@@ -12,7 +12,7 @@ func TestConnect(t *testing.T) {
 	type (
 		input struct {
 			cfg  Config
-			opts []Option
+			opts []func(*bool) Option
 		}
 
 		result struct {
@@ -22,10 +22,10 @@ func TestConnect(t *testing.T) {
 		}
 	)
 
-	var optApplied bool
 	tests := map[string]struct {
-		input input
-		want  result
+		input      input
+		optApplied bool
+		want       result
 	}{
 		"does not connect to postgres with invalid url": {
 			input: input{
@@ -46,7 +46,11 @@ func TestConnect(t *testing.T) {
 					MaxConnLifetime: time.Second * 10,
 					EnableTracing:   true,
 				},
-				opts: []Option{func(*pgx.ConnConfig) { optApplied = true }},
+				opts: []func(*bool) Option{
+					func(opt *bool) Option {
+						return func(*pgx.ConnConfig) { *opt = true }
+					},
+				},
 			},
 			want: result{
 				optApplied:  true,
@@ -57,11 +61,16 @@ func TestConnect(t *testing.T) {
 	}
 
 	for name, tc := range tests {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
-			optApplied = false // restore every time
+			t.Parallel()
 
-			db, err := Connect(tc.input.cfg, tc.input.opts...)
-			assert.Equal(t, tc.want.optApplied, optApplied)
+			opts := make([]Option, 0, len(tc.input.opts))
+			for _, opt := range tc.input.opts {
+				opts = append(opts, opt(&tc.optApplied))
+			}
+			db, err := Connect(tc.input.cfg, opts...)
+			assert.Equal(t, tc.want.optApplied, tc.optApplied)
 			assert.Equal(t, tc.want.wantErr, err != nil, "errors do no match")
 
 			if db != nil {
