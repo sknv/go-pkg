@@ -1,13 +1,13 @@
 .PHONY: all
 all:
 
-.PHONE: add-pre-commit
+.PHONY: add-pre-commit
 add-pre-commit:
 	lefthook add pre-commit
 
 .PHONY: deps
 deps:
-	go mod tidy && go mod verify
+	go mod tidy && go mod vendor && go mod verify
 
 .PHONY: gen
 gen:
