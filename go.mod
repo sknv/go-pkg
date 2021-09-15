@@ -15,7 +15,7 @@ require (
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/json-iterator/go v1.1.12
 	github.com/korovkin/limiter v0.0.0-20190919045942-dac5a6b2a536
-	github.com/pressly/goose v2.7.0+incompatible
+	github.com/pressly/goose/v3 v3.1.0
 	github.com/prometheus/client_golang v1.11.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
