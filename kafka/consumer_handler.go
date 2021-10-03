@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/Shopify/sarama"
-	"github.com/korovkin/limiter"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama"
 	"go.opentelemetry.io/otel"
 
@@ -15,8 +14,6 @@ import (
 type ConsumerHandler interface {
 	// Consume consumes a *sarama.Message. If an error is returned the message will not be marked as consumed.
 	Consume(context.Context, *sarama.ConsumerMessage) error
-	// Limit sets the concurrency limit for the handler. Non-positive value means the default level = 100.
-	Limit() int
 }
 
 type consumerHandler struct {
@@ -46,16 +43,11 @@ func (c *consumerHandler) Cleanup(sarama.ConsumerGroupSession) error {
 // ConsumeClaim must start a consumer loop of ConsumerGroupClaim's Messages().
 // Once the Messages() channel is closed, the Handler must finish its processing loop and exit.
 func (c *consumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	limit := limiter.NewConcurrencyLimiter(c.handler.Limit())
-	defer limit.Wait()
-
 	// Do not move the code below to a goroutine.
 	// The `ConsumeClaim` itself is called within a goroutine, see:
 	// https://github.com/Shopify/sarama/blob/master/consumer_group.go#L27-L29
 	for message := range claim.Messages() {
-		limit.Execute(func() {
-			c.handleMessage(session, message)
-		})
+		c.handleMessage(session, message)
 	}
 	return nil
 }
