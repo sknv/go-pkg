@@ -7,5 +7,7 @@ import (
 
 // RegisterTracer registers tracing for the provided driver name.
 func RegisterTracer(driverName string) (string, error) {
-	return otelsql.Register(driverName, semconv.DBSystemPostgreSQL.Value.AsString())
+	return otelsql.Register(driverName, otelsql.WithAttributes(
+		semconv.DBSystemPostgreSQL,
+	))
 }
