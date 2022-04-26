@@ -13,7 +13,7 @@ func TestJSON(t *testing.T) {
 	type (
 		input struct {
 			status int
-			data   interface{}
+			data   any
 		}
 
 		result struct {
@@ -39,7 +39,7 @@ func TestJSON(t *testing.T) {
 		"renders the provided data": {
 			input: input{
 				status: http.StatusOK,
-				data:   map[string]interface{}{"key": "val"},
+				data:   map[string]any{"key": "val"},
 			},
 			want: result{
 				code:     http.StatusOK,

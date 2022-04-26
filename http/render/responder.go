@@ -7,7 +7,7 @@ import (
 
 // JSON renders JSON data response with the provided status,
 // automatically escaping HTML and setting the Content-Type as application/json.
-func JSON(w http.ResponseWriter, status int, data interface{}) {
+func JSON(w http.ResponseWriter, status int, data any) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(true)

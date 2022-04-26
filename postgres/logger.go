@@ -27,6 +27,6 @@ func WithLogger(level string) Option {
 
 type logger struct{}
 
-func (logger) Log(ctx context.Context, _ pgx.LogLevel, msg string, data map[string]interface{}) {
+func (logger) Log(ctx context.Context, _ pgx.LogLevel, msg string, data map[string]any) {
 	log.Extract(ctx).WithField("op", "postgres").WithFields(data).Debug(msg) // always use debug level
 }

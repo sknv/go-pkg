@@ -5,192 +5,312 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/sknv/go-pkg/cascade/mock"
 )
 
-//go:generate mockgen -source=cascade.go -destination=mock/cascade.go -package=mock
+//go:generate moq -out mocks_test.go -fmt goimports . Storage
 
-func TestGet(t *testing.T) {
-	bottomErr := errors.New("bottom")
-
+func TestCascade_Delete(t *testing.T) {
 	type storageContract struct {
-		result interface{}
-		err    error
+		err error
 	}
-
-	tests := map[string]struct {
+	type fields struct {
 		storages []storageContract
-		want     error
+	}
+	type args struct {
+		deleteBy string
+	}
+
+	bottomErr, topErr := errors.New("bottom"), errors.New("top")
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr assert.ErrorAssertionFunc
 	}{
-		"gets a record from the bottom layer successfully": {
-			storages: []storageContract{
-				{result: nil, err: errors.New("any")},
-				{result: struct{}{}, err: nil},
+		{
+			name: "when a record is set successfully it returns no error",
+			fields: fields{
+				storages: []storageContract{
+					{err: nil},
+					{err: nil},
+				},
 			},
-			want: nil,
+			args: args{
+				deleteBy: "key",
+			},
+			wantErr: func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+				return assert.NoError(t, err)
+			},
 		},
-		"gets a record from the top layer successfully": {
-			storages: []storageContract{
-				{result: struct{}{}, err: nil},
-				{result: nil, err: bottomErr},
+		{
+			name: "when setting a record in the bottom layer failed it returns the error",
+			fields: fields{
+				storages: []storageContract{
+					{err: topErr},
+					{err: bottomErr},
+				},
 			},
-			want: nil,
+			args: args{
+				deleteBy: "key",
+			},
+			wantErr: func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+				return assert.ErrorIs(t, err, bottomErr)
+			},
 		},
-		"returns an `ErrNotFound`": {
-			storages: []storageContract{
-				{result: nil, err: nil},
-				{result: nil, err: nil},
+		{
+			name: "when setting a record in the top layer failed it returns the error",
+			fields: fields{
+				storages: []storageContract{
+					{err: topErr},
+					{err: nil},
+				},
 			},
-			want: ErrNotFound,
-		},
-		"returns an error for the bottom layer": {
-			storages: []storageContract{
-				{result: nil, err: nil},
-				{result: nil, err: bottomErr},
+			args: args{
+				deleteBy: "key",
 			},
-			want: bottomErr,
+			wantErr: func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+				return assert.ErrorIs(t, err, topErr)
+			},
 		},
 	}
 
-	ctrl := gomock.NewController(t)
-
-	for name, tc := range tests {
-		tc := tc
-		t.Run(name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			var storages []Storage
-			for _, st := range tc.storages {
-				storage := mock.NewMockStorage(ctrl)
-				storage.EXPECT().Get(gomock.Any(), gomock.Any()).
-					Return(st.result, st.err).
-					AnyTimes()
-				storage.EXPECT().Set(gomock.Any(), gomock.Any()).AnyTimes()
+			storages := make([]Storage[string, string], 0, len(tt.fields.storages))
+			for _, st := range tt.fields.storages {
+				st := st
+				storage := &StorageMock[string, string]{
+					DeleteFunc: func(_ context.Context, deleteBy string) error {
+						assert.Equal(t, tt.args.deleteBy, deleteBy)
+						return st.err
+					},
+				}
 				storages = append(storages, storage)
 			}
-			cascade := NewCascade(storages...)
 
-			_, err := cascade.Get(context.Background(), struct{}{})
-			assert.ErrorIs(t, err, tc.want, "errors do not match")
+			c := Cascade[string, string]{
+				storages: storages,
+			}
+			err := c.Delete(context.Background(), tt.args.deleteBy)
+			tt.wantErr(t, err)
 		})
 	}
 }
 
-//nolint:dupl // false positive
-func TestSet(t *testing.T) {
-	bottomErr, topErr := errors.New("bottom"), errors.New("top")
-
+func TestCascade_Get(t *testing.T) {
 	type storageContract struct {
+		out string
 		err error
 	}
-
-	tests := map[string]struct {
+	type fields struct {
 		storages []storageContract
-		want     error
+	}
+	type args struct {
+		getBy string
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr assert.ErrorAssertionFunc
 	}{
-		"sets a record successfully": {
-			storages: []storageContract{
-				{err: nil},
-				{err: nil},
+		{
+			name: "when a record is found in the bottom layer it gets it successfully",
+			fields: fields{
+				storages: []storageContract{
+					{out: "", err: errors.New("any")},
+					{out: "value", err: nil},
+				},
 			},
-			want: nil,
+			args: args{
+				getBy: "key",
+			},
+			want: "value",
+			wantErr: func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+				return assert.NoError(t, err)
+			},
 		},
-		"returns an error for the bottom layer": {
-			storages: []storageContract{
-				{err: topErr},
-				{err: bottomErr},
+		{
+			name: "when a record is found in the top layer it gets it successfully",
+			fields: fields{
+				storages: []storageContract{
+					{out: "value", err: nil},
+					{out: "", err: errors.New("any")},
+				},
 			},
-			want: bottomErr,
+			args: args{
+				getBy: "key",
+			},
+			want: "value",
+			wantErr: func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+				return assert.NoError(t, err)
+			},
 		},
-		"returns an error for the top layer": {
-			storages: []storageContract{
-				{err: topErr},
-				{err: nil},
+		{
+			name: "when a record is not found it returns ErrNotFound",
+			fields: fields{
+				storages: []storageContract{
+					{out: "", err: nil},
+					{out: "", err: nil},
+				},
 			},
-			want: topErr,
+			args: args{
+				getBy: "key",
+			},
+			want: "",
+			wantErr: func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+				return assert.ErrorIs(t, err, ErrNotFound)
+			},
+		},
+		{
+			name: "when a record is not found and there is an error it returns an error",
+			fields: fields{
+				storages: []storageContract{
+					{out: "", err: nil},
+					{out: "", err: errors.New("any")},
+				},
+			},
+			args: args{
+				getBy: "key",
+			},
+			want: "",
+			wantErr: func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+				return assert.Error(t, err)
+			},
 		},
 	}
 
-	ctrl := gomock.NewController(t)
-
-	for name, tc := range tests {
-		tc := tc
-		t.Run(name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			var storages []Storage
-			for _, st := range tc.storages {
-				storage := mock.NewMockStorage(ctrl)
-				storage.EXPECT().Set(gomock.Any(), gomock.Any()).
-					Return(st.err).
-					AnyTimes()
+			storages := make([]Storage[string, string], 0, len(tt.fields.storages))
+			for _, st := range tt.fields.storages {
+				st := st
+				storage := &StorageMock[string, string]{
+					GetFunc: func(_ context.Context, getBy string) (string, error) {
+						assert.Equal(t, tt.args.getBy, getBy)
+						return st.out, st.err
+					},
+					SetFunc: func(_ context.Context, setBy string, record string) error {
+						assert.Equal(t, tt.args.getBy, setBy)
+						return nil
+					},
+				}
 				storages = append(storages, storage)
 			}
-			cascade := NewCascade(storages...)
 
-			err := cascade.Set(context.Background(), struct{}{})
-			assert.ErrorIs(t, err, tc.want, "errors do not match")
+			c := Cascade[string, string]{
+				storages: storages,
+			}
+			got, err := c.Get(context.Background(), tt.args.getBy)
+			tt.wantErr(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-//nolint:dupl // false positive
-func TestDelete(t *testing.T) {
-	bottomErr, topErr := errors.New("bottom"), errors.New("top")
-
+func TestCascade_Set(t *testing.T) {
 	type storageContract struct {
 		err error
 	}
-
-	tests := map[string]struct {
+	type fields struct {
 		storages []storageContract
-		want     error
+	}
+	type args struct {
+		setBy  string
+		record string
+	}
+
+	bottomErr, topErr := errors.New("bottom"), errors.New("top")
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr assert.ErrorAssertionFunc
 	}{
-		"deletes a record successfully": {
-			storages: []storageContract{
-				{err: nil},
-				{err: nil},
+		{
+			name: "when a record is set successfully it returns no error",
+			fields: fields{
+				storages: []storageContract{
+					{err: nil},
+					{err: nil},
+				},
 			},
-			want: nil,
+			args: args{
+				setBy:  "key",
+				record: "value",
+			},
+			wantErr: func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+				return assert.NoError(t, err)
+			},
 		},
-		"returns an error for the bottom layer": {
-			storages: []storageContract{
-				{err: topErr},
-				{err: bottomErr},
+		{
+			name: "when setting a record in the bottom layer failed it returns the error",
+			fields: fields{
+				storages: []storageContract{
+					{err: topErr},
+					{err: bottomErr},
+				},
 			},
-			want: bottomErr,
+			args: args{
+				setBy:  "key",
+				record: "value",
+			},
+			wantErr: func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+				return assert.ErrorIs(t, err, bottomErr)
+			},
 		},
-		"returns an error for the top layer": {
-			storages: []storageContract{
-				{err: topErr},
-				{err: nil},
+		{
+			name: "when setting a record in the top layer failed it returns the error",
+			fields: fields{
+				storages: []storageContract{
+					{err: topErr},
+					{err: nil},
+				},
 			},
-			want: topErr,
+			args: args{
+				setBy:  "key",
+				record: "value",
+			},
+			wantErr: func(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+				return assert.ErrorIs(t, err, topErr)
+			},
 		},
 	}
 
-	ctrl := gomock.NewController(t)
-
-	for name, tc := range tests {
-		tc := tc
-		t.Run(name, func(t *testing.T) {
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			var storages []Storage
-			for _, st := range tc.storages {
-				storage := mock.NewMockStorage(ctrl)
-				storage.EXPECT().Delete(gomock.Any(), gomock.Any()).
-					Return(st.err).
-					AnyTimes()
+			storages := make([]Storage[string, string], 0, len(tt.fields.storages))
+			for _, st := range tt.fields.storages {
+				st := st
+				storage := &StorageMock[string, string]{
+					SetFunc: func(_ context.Context, setBy string, record string) error {
+						assert.Equal(t, tt.args.setBy, setBy)
+						assert.Equal(t, tt.args.record, record)
+						return st.err
+					},
+				}
 				storages = append(storages, storage)
 			}
-			cascade := NewCascade(storages...)
 
-			err := cascade.Delete(context.Background(), struct{}{})
-			assert.ErrorIs(t, err, tc.want, "errors do not match")
+			c := Cascade[string, string]{
+				storages: storages,
+			}
+			err := c.Set(context.Background(), tt.args.setBy, tt.args.record)
+			tt.wantErr(t, err)
 		})
 	}
 }

@@ -21,7 +21,7 @@ func TestDecodeJSON(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			dst := make(map[string]interface{})
+			dst := make(map[string]any)
 			err := DecodeJSON(strings.NewReader(tc.input), &dst)
 			assert.Equal(t, tc.wantErr, err != nil)
 		})

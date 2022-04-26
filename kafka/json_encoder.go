@@ -14,7 +14,7 @@ type JSONEncoder struct {
 	err  error
 }
 
-func NewJSONEncoder(message interface{}) *JSONEncoder {
+func NewJSONEncoder(message any) *JSONEncoder {
 	data, err := json.Marshal(message)
 	return &JSONEncoder{
 		data: data,
@@ -26,7 +26,7 @@ func (e *JSONEncoder) Encode() ([]byte, error) {
 	return e.data, e.err
 }
 
-func (*JSONEncoder) Decode(data []byte, message interface{}) error {
+func (*JSONEncoder) Decode(data []byte, message any) error {
 	return json.Unmarshal(data, message)
 }
 
