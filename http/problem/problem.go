@@ -31,7 +31,7 @@ type Problem struct {
 	Instance string `json:"instance,omitempty"`
 
 	// Some additional information.
-	Extensions interface{} `json:"extensions,omitempty"`
+	Extensions any `json:"extensions,omitempty"`
 }
 
 func New(status int, title string) *Problem {
@@ -89,11 +89,11 @@ func (p *Problem) SetInstance(instance string) *Problem {
 	return p
 }
 
-func (p *Problem) GetExtensions() interface{} {
+func (p *Problem) GetExtensions() any {
 	return p.Extensions
 }
 
-func (p *Problem) SetExtensions(ext interface{}) *Problem {
+func (p *Problem) SetExtensions(ext any) *Problem {
 	p.Extensions = ext
 	return p
 }

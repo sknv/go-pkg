@@ -12,12 +12,12 @@ const (
 )
 
 type jsonError struct {
-	Type       string      `json:"type"`
-	Title      string      `json:"title"`
-	Status     int         `json:"status"`
-	Detail     string      `json:"detail,omitempty"`
-	Instance   string      `json:"instance,omitempty"`
-	Extensions interface{} `json:"extensions,omitempty"`
+	Type       string `json:"type"`
+	Title      string `json:"title"`
+	Status     int    `json:"status"`
+	Detail     string `json:"detail,omitempty"`
+	Instance   string `json:"instance,omitempty"`
+	Extensions any    `json:"extensions,omitempty"`
 }
 
 // Render renders JSON error response.

@@ -16,36 +16,36 @@ var (
 
 // Dependency contract
 
-type Storage interface {
-	// Get should return (nil, nil) pair if a record is not found.
-	Get(ctx context.Context, record interface{}) (interface{}, error)
-	Set(ctx context.Context, record interface{}) error
-	Delete(ctx context.Context, record interface{}) error
+type Storage[Q any, R comparable] interface {
+	// Get should return (zero value, nil) pair if a record is not found.
+	Get(ctx context.Context, getBy Q) (R, error)
+	Set(ctx context.Context, setBy Q, record R) error
+	Delete(ctx context.Context, deleteBy Q) error
 }
 
 // Cascade manages multiple storages allowing to get and setReversed records in cascade manner.
-type Cascade struct {
-	storages []Storage
+type Cascade[Q any, R comparable] struct {
+	storages []Storage[Q, R]
 }
 
 // NewCascade returns a new instance.
-func NewCascade(storages ...Storage) *Cascade {
-	return &Cascade{
+func NewCascade[Q any, R comparable](storages ...Storage[Q, R]) *Cascade[Q, R] {
+	return &Cascade[Q, R]{
 		storages: storages,
 	}
 }
 
 // Get fetches a record from the cascade, setting the value for the missing storages.
-func (c *Cascade) Get(ctx context.Context, record interface{}) (interface{}, error) {
+func (c *Cascade[Q, R]) Get(ctx context.Context, getBy Q) (R, error) {
 	logger := log.Extract(ctx)
 
 	var (
-		result interface{}
+		result R
 		err    error
 	)
 	foundIndex := -1
 	for i, st := range c.storages {
-		result, err = st.Get(ctx, record)
+		result, err = st.Get(ctx, getBy)
 		if err != nil {
 			logger.WithFields(logrus.Fields{
 				"error": err,
@@ -54,7 +54,8 @@ func (c *Cascade) Get(ctx context.Context, record interface{}) (interface{}, err
 			continue
 		}
 
-		if result == nil {
+		var zeroR R
+		if result == zeroR {
 			continue
 		}
 
@@ -66,11 +67,13 @@ func (c *Cascade) Get(ctx context.Context, record interface{}) (interface{}, err
 		if err == nil {
 			err = ErrNotFound
 		}
-		return nil, err
+
+		var zeroR R
+		return zeroR, err
 	}
 
 	// Sync storages
-	if err = c.setReversed(ctx, result, foundIndex-1); err != nil {
+	if err = c.setReversed(ctx, getBy, result, foundIndex-1); err != nil {
 		logger.WithError(err).Error("sync storages")
 	}
 
@@ -78,25 +81,25 @@ func (c *Cascade) Get(ctx context.Context, record interface{}) (interface{}, err
 }
 
 // Set sets the record for all the storages.
-func (c *Cascade) Set(ctx context.Context, record interface{}) error {
-	return c.setReversed(ctx, record, len(c.storages)-1)
+func (c *Cascade[Q, R]) Set(ctx context.Context, setBy Q, record R) error {
+	return c.setReversed(ctx, setBy, record, len(c.storages)-1)
 }
 
 // Delete deletes the record from all the storages.
-func (c *Cascade) Delete(ctx context.Context, record interface{}) error {
+func (c *Cascade[Q, R]) Delete(ctx context.Context, deleteBy Q) error {
 	for i := len(c.storages) - 1; i >= 0; i-- { // reversed order
 		st := c.storages[i]
-		if err := st.Delete(ctx, record); err != nil {
+		if err := st.Delete(ctx, deleteBy); err != nil {
 			return fmt.Errorf("delete record from storage with index %d: %w", i, err)
 		}
 	}
 	return nil
 }
 
-func (c *Cascade) setReversed(ctx context.Context, record interface{}, upperIndex int) error {
+func (c *Cascade[Q, R]) setReversed(ctx context.Context, setBy Q, record R, upperIndex int) error {
 	for i := upperIndex; i >= 0; i-- { // reversed order
 		st := c.storages[i]
-		if err := st.Set(ctx, record); err != nil {
+		if err := st.Set(ctx, setBy, record); err != nil {
 			return fmt.Errorf("set record for storage with index %d: %w", i, err)
 		}
 	}
